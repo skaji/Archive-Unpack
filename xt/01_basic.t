@@ -29,7 +29,10 @@ my $test = sub {
     subtest $method => sub {
         my $guard = tempd;
         if ($method !~ /unzip/) {
-            ok !$unpacker->$method("__bad__.tar.gz");
+            my ($ok, $err) = $unpacker->$method("__bad__.tar.gz");
+            ok !$ok;
+            ok $err;
+            note $err;
 
             my $root1 = $unpacker->$method(catfile($store, "CPAN-Flatten-0.01.tar.gz"));
             is $root1, "CPAN-Flatten-0.01";
@@ -38,7 +41,10 @@ my $test = sub {
         }
 
         if ($method !~ /untar/) {
-            ok !$unpacker->$method("__bad__.zip");
+            my ($ok, $err) = $unpacker->$method("__bad__.zip");
+            ok !$ok;
+            ok $err;
+            note $err;
 
             my $root1 = $unpacker->$method(catfile($store, "Win32-SystemInfo-0.11.zip"));
             is $root1, "Win32-SystemInfo-0.11";
