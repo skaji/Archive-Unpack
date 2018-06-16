@@ -13,11 +13,11 @@ use File::pushd qw(tempd pushd);
 my $store = tempdir CLEANUP => 1;
 {
     my $guard = pushd $store;
-    !system "wget", "-q", "https://cpan.metacpan.org/authors/id/C/CJ/CJOHNSTON/Win32-SystemInfo-0.11.zip" or die;
-    !system "wget", "-q", "https://cpan.metacpan.org/authors/id/J/JJ/JJONES/Finance-OFX-Parse-Simple-0.07.zip" or die;
+    !system "curl", "-sSLO", "https://cpan.metacpan.org/authors/id/C/CJ/CJOHNSTON/Win32-SystemInfo-0.11.zip" or die;
+    !system "curl", "-sSLO", "https://cpan.metacpan.org/authors/id/J/JJ/JJONES/Finance-OFX-Parse-Simple-0.07.zip" or die;
 
-    !system "wget", "-q", "https://cpan.metacpan.org/authors/id/S/SK/SKAJI/CPAN-Flatten-0.01.tar.gz" or die;
-    !system "wget", "-q", "https://ftp.gnu.org/gnu/m4/m4-1.4.3.tar.bz2" or die;
+    !system "curl", "-sSLO", "https://cpan.metacpan.org/authors/id/S/SK/SKAJI/CPAN-Flatten-0.01.tar.gz" or die;
+    !system "curl", "-sSLO", "https://ftp.gnu.org/gnu/m4/m4-1.4.3.tar.bz2" or die;
 }
 
 $Archive::Unpack::_INIT_ALL = 1;
