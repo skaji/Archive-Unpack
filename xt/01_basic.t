@@ -48,7 +48,9 @@ my $test = sub {
     };
 };
 
-$test->($_) for qw(unpack unzip _unzip _unzip_module untar _untar _untar_bad _untar_module);
+my @method = qw(unpack unzip _unzip _unzip_module untar _untar_bad _untar_module);
+push @method, "_untar" if $^O ne 'MSWin32';
+$test->($_) for @method;
 
 opendir my $dh, $store or die;
 my @entory = grep { !/^\.\.?$/ } readdir $dh;
