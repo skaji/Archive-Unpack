@@ -169,7 +169,7 @@ sub _unzip {
             redo FILE if $root;
         }
     }
-    $cmd = Command::Runner->new(command => [$Backend->{unzip}, $file]);
+    $cmd = Command::Runner->new(command => [$Backend->{unzip}, '-q', $file]);
     $res = $cmd->run;
     if ($res->{result} == 0 and -d $root) {
         return $root;

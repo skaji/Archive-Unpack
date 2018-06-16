@@ -5,3 +5,7 @@ requires 'Command::Runner';
 
 suggests 'Archive::Tar';
 suggests 'Archive::Zip';
+
+on develop => sub {
+    requires 'File::pushd';
+};
