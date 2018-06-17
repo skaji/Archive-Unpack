@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/skaji/Archive-Unpack.svg?branch=master)](https://travis-ci.org/skaji/Archive-Unpack)
+[![Build Status](https://travis-ci.com/skaji/Archive-Unpack.svg?branch=master)](https://travis-ci.com/skaji/Archive-Unpack)
 [![AppVeyor Status](https://ci.appveyor.com/api/projects/status/github/skaji/Archive-Unpack?branch=master&svg=true)](https://ci.appveyor.com/project/skaji/Archive-Unpack)
 
 # NAME
