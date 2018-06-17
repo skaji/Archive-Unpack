@@ -102,7 +102,7 @@ sub _untar_bad {
     my $ar = $file =~ /bz2$/ ? $Backend->{bzip2} : $Backend->{gzip};
     my $cmd = Command::Runner->new(commandf => ['%q -dc %q | %q tf -', $ar, $file, $Backend->{tar}]);
     my $res = $cmd->run;
-    if ($res->{result} != 0) {
+    if ($res->{result} != 0 || !$res->{stdout}) {
         return if !$wantarray;
         return (undef, $res->{stderr});
     }
