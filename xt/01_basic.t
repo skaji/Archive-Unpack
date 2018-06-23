@@ -9,7 +9,6 @@ use File::Spec::Functions 'catfile';
 use File::Temp 'tempdir';
 use File::pushd qw(tempd pushd);
 
-
 my $store = tempdir CLEANUP => 1;
 {
     my $guard = pushd $store;
@@ -59,8 +58,8 @@ push @method, "_untar" if $^O ne 'MSWin32';
 $test->($_) for @method;
 
 opendir my ($dh), $store or die;
-my @entory = grep { !/^\.\.?$/ } readdir $dh;
+my @entry = grep { !/^\.\.?$/ } readdir $dh;
 close $dh;
-is @entory, 4;
+is @entry, 4;
 
 done_testing;

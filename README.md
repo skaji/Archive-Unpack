@@ -9,12 +9,14 @@ Archive::Unpack - unpack tarballs and zipballs
 
     use Archive::Unpack;
 
-    my $unpacker = Archive::Unpack->new;
+    my $archive = Archive::Unpack->new;
 
     chdir "workspace";
-    my $root1 = $unpacker->unpack("ModuleA-0.1.tar.gz");
-    my $root2 = $unpacker->unpack("ModuleB-0.1.tar.bz2");
-    my $root3 = $unpacker->unpack("ModuleC-0.1.zip");
+
+    # unpack tarballs and zipballs in workspace/
+    my $root1 = $archive->unpack("/path/to/ModuleA-0.1.tar.gz");
+    my $root2 = $archive->unpack("/path/to/ModuleB-0.1.tar.bz2");
+    my $root3 = $archive->unpack("/path/to/ModuleC-0.1.zip");
 
 # DESCRIPTION
 
