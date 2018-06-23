@@ -107,10 +107,14 @@ sub _untar_bad {
         my $temp = File::Temp->new(SUFFIX => '.tar', EXLOCK => 0);
         ($exit, $out, $err) = _run3 [$ar, "-dc", $file], $temp->filename;
         last if $exit != 0;
-        ($exit, $out, $err) = _run3 [$Backend->{tar}, "tf", $temp->filename];
+
+        # XXX /usr/bin/tar: Cannot connect to C: resolve failed
+        my @opt = $^O eq 'MSWin32' ? ('--force-local') : ();
+
+        ($exit, $out, $err) = _run3 [$Backend->{tar}, @opt, "-tf", $temp->filename];
         last if $exit != 0 || !$out;
         my $root = $self->_find_tarroot(split /\r?\n/, $out);
-        ($exit, $out, $err) = _run3 [$Backend->{tar}, "xf", $temp->filename];
+        ($exit, $out, $err) = _run3 [$Backend->{tar}, @opt, "-xf", $temp->filename];
         return $root if $exit == 0 and -d $root;
     }
     return if !$wantarray;
