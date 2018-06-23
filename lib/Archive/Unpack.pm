@@ -4,8 +4,16 @@ use warnings;
 
 our $VERSION = '0.001';
 
-use Command::Runner;
+use File::Temp ();
 use File::Which ();
+use IPC::Run3 ();
+
+sub _run3 {
+    my ($cmd, $outfile) = @_;
+    my $out;
+    IPC::Run3::run3 $cmd, \undef, ($outfile ? $outfile : \$out), \my $err;
+    return ($?, $out, $err);
+}
 
 my $Init;
 my $Backend = {};
@@ -33,11 +41,9 @@ sub _init {
     # untar
     $Backend->{tar} = File::Which::which("tar");
     my $maybe_bad_tar = sub {
-        return 1 if $^O eq 'MSWin32';
-        return 1 if $^O eq 'solaris' || $^O eq 'hpux';
-        my $cmd = Command::Runner->new(command => [$Backend->{tar}, '--version']);
-        my $res = $cmd->run;
-        $res->{stdout} =~ /GNU.*1\.13/i;
+        return 1 if $^O eq 'MSWin32' || $^O eq 'solaris' || $^O eq 'hpux';
+        my ($exit, $out, $err) = _run3 [$Backend->{tar}, '--version'];
+        $out =~ /GNU.*1\.13/i;
     };
     if ($Backend->{tar} and !$maybe_bad_tar->()) {
         *untar = *_untar;
@@ -78,43 +84,37 @@ sub _init {
 sub _untar {
     my ($self, $file) = @_;
     my $wantarray = wantarray;
-    my $ar = $file =~ /bz2$/ ? 'j' : 'z';
-    my $cmd = Command::Runner->new(command => [$Backend->{tar}, "${ar}tf", $file]);
-    my $res = $cmd->run;
-    if ($res->{result} != 0) {
-        return if !$wantarray;
-        return (undef, $res->{stderr});
+
+    my ($exit, $out, $err);
+    {
+        my $ar = $file =~ /bz2$/ ? 'j' : 'z';
+        ($exit, $out, $err) = _run3 [$Backend->{tar}, "${ar}tf", $file];
+        last if $exit != 0;
+        my $root = $self->_find_tarroot(split /\r?\n/, $out);
+        ($exit, $out, $err) = _run3 [$Backend->{tar}, "${ar}xf", $file];
+        return $root if $exit == 0 and -d $root;
     }
-    my $root = $self->_find_root(split /\r?\n/, $res->{stdout});
-    $cmd = Command::Runner->new(command => [$Backend->{tar}, "${ar}xf", $file]);
-    $res = $cmd->run;
-    if ($res->{result} == 0 and -d $root) {
-        return $root;
-    } else {
-        return if !$wantarray;
-        return (undef, $res->{stderr});
-    }
+    return if !$wantarray;
+    return (undef, $err || $out);
 }
 
 sub _untar_bad {
     my ($self, $file) = @_;
     my $wantarray = wantarray;
-    my $ar = $file =~ /bz2$/ ? $Backend->{bzip2} : $Backend->{gzip};
-    my $cmd = Command::Runner->new(commandf => ['%q -dc %q | %q tf -', $ar, $file, $Backend->{tar}]);
-    my $res = $cmd->run;
-    if ($res->{result} != 0 || !$res->{stdout}) {
-        return if !$wantarray;
-        return (undef, $res->{stderr});
+    my ($exit, $out, $err);
+    {
+        my $ar = $file =~ /bz2$/ ? $Backend->{bzip2} : $Backend->{gzip};
+        my $temp = File::Temp->new(SUFFIX => '.tar', EXLOCK => 0);
+        ($exit, $out, $err) = _run3 [$ar, "-dc", $file], $temp->filename;
+        last if $exit != 0;
+        ($exit, $out, $err) = _run3 [$Backend->{tar}, "tf", $temp->filename];
+        last if $exit != 0 || !$out;
+        my $root = $self->_find_tarroot(split /\r?\n/, $out);
+        ($exit, $out, $err) = _run3 [$Backend->{tar}, "xf", $temp->filename];
+        return $root if $exit == 0 and -d $root;
     }
-    my $root = $self->_find_root(split /\r?\n/, $res->{stdout});
-    $cmd = Command::Runner->new(commandf => ['%q -dc %q | %q xf -', $ar, $file, $Backend->{tar}]);
-    $res = $cmd->run;
-    if ($res->{result} == 0 and -d $root) {
-        return $root;
-    } else {
-        return if !$wantarray;
-        return (undef, $res->{stderr});
-    }
+    return if !$wantarray;
+    return (undef, $err || $out);
 }
 
 sub _untar_module {
@@ -123,22 +123,18 @@ sub _untar_module {
     no warnings 'once';
     local $Archive::Tar::WARN = 0;
     my $t = Archive::Tar->new;
-    my $ok = $t->read($file);
-    if (!$ok) {
-        return if !$wantarray;
-        return (undef, $t->error);
+    {
+        my $ok = $t->read($file);
+        last if !$ok;
+        my $root = $self->_find_tarroot($t->list_files);
+        my @file = $t->extract;
+        return $root if @file and -d $root;
     }
-    my $root = $self->_find_root($t->list_files);
-    my @file = $t->extract;
-    if (@file and -d $root) {
-        return $root;
-    } else {
-        return if !$wantarray;
-        return (undef, $t->error);
-    }
+    return if !$wantarray;
+    return (undef, $t->error);
 }
 
-sub _find_root {
+sub _find_tarroot {
     my ($self, $root, @others) = @_;
     FILE: {
         chomp $root;
@@ -155,28 +151,17 @@ sub _find_root {
 sub _unzip {
     my ($self, $file) = @_;
     my $wantarray = wantarray;
-    my $cmd = Command::Runner->new(command => [$Backend->{unzip}, '-t', $file]);
-    my $res = $cmd->run;
-    if ($res->{result} != 0) {
-        return if !$wantarray;
-        return (undef, $res->{stderr} || $res->{stdout});
+
+    my ($exit, $out, $err);
+    {
+        ($exit, $out, $err) = _run3 [$Backend->{unzip}, '-t', $file];
+        last if $exit != 0;
+        my $root = $self->_find_ziproot(split /\r?\n/, $out);
+        ($exit, $out, $err) = _run3 [$Backend->{unzip}, '-q', $file];
+        return $root if $exit == 0 and -d $root;
     }
-    my (undef, $root, @others) = split /\r?\n/, $res->{stdout};
-    FILE: {
-        chomp $root;
-        if ($root !~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1}) {
-            $root = shift @others;
-            redo FILE if $root;
-        }
-    }
-    $cmd = Command::Runner->new(command => [$Backend->{unzip}, '-q', $file]);
-    $res = $cmd->run;
-    if ($res->{result} == 0 and -d $root) {
-        return $root;
-    } else {
-        return if !$wantarray;
-        return (undef, $res->{stderr} || $res->{stdout});
-    }
+    return if !$wantarray;
+    return (undef, $err || $out);
 }
 
 sub _unzip_module {
@@ -186,27 +171,35 @@ sub _unzip_module {
     no warnings 'once';
     my $err = ''; local $Archive::Zip::ErrorHandler = sub { $err .= "@_" };
     my $zip = Archive::Zip->new;
-    if ($zip->read($file) != Archive::Zip::AZ_OK()) {
-        return if !$wantarray;
-        return (undef, $err);
-    }
-    for my $member ($zip->members) {
-        my $af = $member->fileName;
-        next if $af =~ m!^(/|\.\./)!;
-        if ($member->extractToFileNamed($af) != Archive::Zip::AZ_OK()) {
-            return if !$wantarray;
-            return (undef, $err);
+    UNZIP: {
+        my $status = $zip->read($file);
+        last UNZIP if $status != Archive::Zip::AZ_OK();
+        for my $member ($zip->members) {
+            my $af = $member->fileName;
+            next if $af =~ m!^(/|\.\./)!;
+            my $status = $member->extractToFileNamed($af);
+            last UNZIP if $status != Archive::Zip::AZ_OK();
         }
-    }
-    my ($root) = $zip->membersMatching(qr{^[^/]+/$});
-    if ($root) {
+        my ($root) = $zip->membersMatching(qr{^[^/]+/$});
+        last UNZIP if !$root;
         $root = $root->fileName;
         $root =~ s{/$}{};
         return $root if -d $root;
     }
-
     return if !$wantarray;
     return (undef, $err);
+}
+
+sub _find_ziproot {
+    my ($self, undef, $root, @others) = @_;
+    FILE: {
+        chomp $root;
+        if ($root !~ s{^\s+testing:\s+([^/]+)/.*?\s+OK$}{$1}) {
+            $root = shift @others;
+            redo FILE if $root;
+        }
+    }
+    $root;
 }
 
 1;

@@ -38,8 +38,9 @@
       },
       "runtime" : {
          "requires" : {
-            "Command::Runner" : "0",
+            "File::Temp" : "0",
             "File::Which" : "0",
+            "IPC::Run3" : "0",
             "perl" : "5.008001"
          },
          "suggests" : {

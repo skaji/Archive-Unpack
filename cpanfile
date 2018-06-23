@@ -1,7 +1,8 @@
 requires 'perl', '5.008001';
 
+requires 'File::Temp';
 requires 'File::Which';
-requires 'Command::Runner';
+requires 'IPC::Run3';
 
 suggests 'Archive::Tar';
 suggests 'Archive::Zip';
