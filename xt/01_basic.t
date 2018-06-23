@@ -29,27 +29,27 @@ my $test = sub {
     subtest $method => sub {
         my $guard = tempd;
         if ($method !~ /unzip/) {
-            my ($ok, $err) = $unpacker->$method("__bad__.tar.gz");
-            ok !$ok;
+            my ($root, $err) = $unpacker->$method("__bad__.tar.gz");
+            ok !$root;
             ok $err;
             note $err;
 
-            my $root1 = $unpacker->$method(catfile($store, "CPAN-Flatten-0.01.tar.gz"));
-            is $root1, "CPAN-Flatten-0.01";
-            my $root2 = $unpacker->$method(catfile($store, "m4-1.4.3.tar.bz2"));
-            is $root2, "m4-1.4.3";
+            ($root, $err) = $unpacker->$method(catfile($store, "CPAN-Flatten-0.01.tar.gz"));
+            is $root, "CPAN-Flatten-0.01" or diag $err;
+            ($root, $err) = $unpacker->$method(catfile($store, "m4-1.4.3.tar.bz2"));
+            is $root, "m4-1.4.3" or diag $err;
         }
 
         if ($method !~ /untar/) {
-            my ($ok, $err) = $unpacker->$method("__bad__.zip");
-            ok !$ok;
+            my ($root, $err) = $unpacker->$method("__bad__.zip");
+            ok !$root;
             ok $err;
             note $err;
 
-            my $root1 = $unpacker->$method(catfile($store, "Win32-SystemInfo-0.11.zip"));
-            is $root1, "Win32-SystemInfo-0.11";
-            my $root2 = $unpacker->$method(catfile($store, "Finance-OFX-Parse-Simple-0.07.zip"));
-            is $root2, "Finance--OFX--Parse--Simple-master";
+            ($root, $err) = $unpacker->$method(catfile($store, "Win32-SystemInfo-0.11.zip"));
+            is $root, "Win32-SystemInfo-0.11" or diag $err;
+            ($root, $err) = $unpacker->$method(catfile($store, "Finance-OFX-Parse-Simple-0.07.zip"));
+            is $root, "Finance--OFX--Parse--Simple-master" or diag $err;
         }
     };
 };
