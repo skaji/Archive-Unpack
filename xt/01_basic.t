@@ -15,8 +15,10 @@ my $store = tempdir CLEANUP => 1;
     !system "curl", "-sSLO", "https://cpan.metacpan.org/authors/id/C/CJ/CJOHNSTON/Win32-SystemInfo-0.11.zip" or die;
     !system "curl", "-sSLO", "https://cpan.metacpan.org/authors/id/J/JJ/JJONES/Finance-OFX-Parse-Simple-0.07.zip" or die;
 
+    !system "curl", "-sSL", "-o", "master.tar.gz", "https://github.com/skaji/Archive-Unpack/archive/master.tar.gz" or die;
     !system "curl", "-sSLO", "https://cpan.metacpan.org/authors/id/S/SK/SKAJI/CPAN-Flatten-0.01.tar.gz" or die;
     !system "curl", "-sSLO", "https://ftp.gnu.org/gnu/m4/m4-1.4.3.tar.bz2" or die;
+    !system "curl", "-sSLO", "https://ftp.gnu.org/gnu/m4/m4-1.4.13.tar.xz" or die;
 }
 
 $Archive::Unpack::_INIT_ALL = 1;
@@ -37,6 +39,12 @@ my $test = sub {
             is $root, "CPAN-Flatten-0.01" or diag $err;
             ($root, $err) = $unpacker->$method(catfile($store, "m4-1.4.3.tar.bz2"));
             is $root, "m4-1.4.3" or diag $err;
+            ($root, $err) = $unpacker->$method(catfile($store, "master.tar.gz"));
+            is $root, "Archive-Unpack-master" or diag $err;
+            if ($method ne '_untar_module') {
+                ($root, $err) = $unpacker->$method(catfile($store, "m4-1.4.13.tar.xz"));
+                is $root, "m4-1.4.13" or diag $err;
+            }
         }
 
         if ($method !~ /untar/) {
@@ -60,6 +68,6 @@ $test->($_) for @method;
 opendir my ($dh), $store or die;
 my @entry = grep { !/^\.\.?$/ } readdir $dh;
 close $dh;
-is @entry, 4;
+is @entry, 6;
 
 done_testing;
