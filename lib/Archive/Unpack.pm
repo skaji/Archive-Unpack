@@ -54,7 +54,7 @@ sub _init {
     ) {
         *untar = *_untar_bad;
     } elsif (eval { require Archive::Tar }) {
-        $Backend->{'Archive::Tar'} = 'Archive::Tar ' . Archive::Tar->VERSION;
+        $Backend->{'Archive::Tar'} = Archive::Tar->VERSION;
         *untar = *_untar_module;
     } else {
         *untar = sub { die "There is no backend for untar" };
@@ -64,7 +64,7 @@ sub _init {
     if ($Backend->{unzip} = File::Which::which("unzip")) {
         *unzip = *_unzip;
     } elsif (eval { require Archive::Zip }) {
-        $Backend->{'Archive::Zip'} = 'Archive::Zip ' . Archive::Zip->VERSION;
+        $Backend->{'Archive::Zip'} = Archive::Zip->VERSION;
         *unzip = *_unzip_module;
     } else {
         *unzip = sub { die "There is no backend for unzip" };
@@ -76,7 +76,7 @@ sub _init {
         }
         for my $m (qw(Archive::Tar Archive::Zip)) {
             eval "require $m" or die $@;
-            $Backend->{$m} = "$m ". $m->VERSION;
+            $Backend->{$m} = $m->VERSION;
         }
     }
 }
