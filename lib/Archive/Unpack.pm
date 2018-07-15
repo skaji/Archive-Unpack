@@ -53,7 +53,6 @@ sub _init {
         $Backend->{bzip2} = File::Which::which("bzip2")
     ) {
         *untar = *_untar_bad;
-        $Backend->{xz} = File::Which::which("xz"); # optional xz
     } elsif (eval { require Archive::Tar }) {
         $Backend->{'Archive::Tar'} = 'Archive::Tar ' . Archive::Tar->VERSION;
         *untar = *_untar_module;
@@ -72,7 +71,7 @@ sub _init {
     }
 
     if ($_INIT_ALL) {
-        for my $c (qw(tar gzip bzip2 xz unzip)) {
+        for my $c (qw(tar gzip bzip2 unzip)) {
             $Backend->{$c} = File::Which::which($c);
         }
         for my $m (qw(Archive::Tar Archive::Zip)) {
@@ -88,7 +87,7 @@ sub _untar {
 
     my ($exit, $out, $err);
     {
-        my $ar = $file =~ /\.xz$/ ? 'J' : $file =~ /\.bz2$/ ? 'j' : 'z';
+        my $ar = $file =~ /bz2$/ ? 'j' : 'z';
         ($exit, $out, $err) = _run3 [$Backend->{tar}, "${ar}tf", $file];
         last if $exit != 0;
         my $root = $self->_find_tarroot(split /\r?\n/, $out);
@@ -104,10 +103,7 @@ sub _untar_bad {
     my $wantarray = wantarray;
     my ($exit, $out, $err);
     {
-        my $ar = $file =~ /\.xz$/  ? $Backend->{xz}
-               : $file =~ /\.bz2$/ ? $Backend->{bzip2}
-               :                     $Backend->{gzip};
-        die "There is no backend for xz" if !$ar;
+        my $ar = $file =~ /bz2$/ ? $Backend->{bzip2} : $Backend->{gzip};
         my $temp = File::Temp->new(SUFFIX => '.tar', EXLOCK => 0);
         ($exit, $out, $err) = _run3 [$ar, "-dc", $file], $temp->filename;
         last if $exit != 0;

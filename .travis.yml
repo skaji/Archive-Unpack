@@ -8,4 +8,4 @@ perl:
 install:
   - curl -sSL --compressed https://git.io/cpm | perl - install -g --with-develop --with-suggests
 script:
-  - prove -lv t xt
+  - prove -l t xt
